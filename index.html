@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四字熟語タイピング</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+
+:root{
+  --washi:#ECE6D6;
+  --washi-card:#F6F1E4;
+  --ink:#2B2B27;
+  --ink-soft:#6B6659;
+  --shu:#9C2B23;
+  --green:#2F5A3B;
+  --line:#CBBF9F;
+}
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+
+body{
+  min-height:100vh;
+  background-color:var(--washi);
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 4px),
+    radial-gradient(ellipse at 15% 15%, rgba(255,255,255,0.5), transparent 55%),
+    radial-gradient(ellipse at 85% 85%, rgba(0,0,0,0.05), transparent 55%);
+  font-family:'Shippori Mincho', serif;
+  color:var(--ink);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px 16px;
+}
+
+#app{ width:100%; max-width:520px; }
+
+.tanzaku{
+  background:var(--washi-card);
+  border:1px solid var(--line);
+  box-shadow:0 18px 40px rgba(43,43,39,0.12);
+  padding:44px 40px 36px;
+  position:relative;
+}
+.tanzaku::before{
+  content:"";
+  position:absolute;
+  left:0; top:28px; bottom:28px;
+  width:3px;
+  background:var(--shu);
+  opacity:0.85;
+}
+
+.title{
+  margin:0 0 8px;
+  font-size:1.5rem;
+  font-weight:700;
+  letter-spacing:0.1em;
+  text-align:center;
+}
+
+.lead{
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.82rem;
+  color:var(--ink-soft);
+  text-align:center;
+  margin:0 0 32px;
+  line-height:1.8;
+}
+
+.section-label{
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.78rem;
+  font-weight:700;
+  color:var(--ink);
+  margin:0 0 14px;
+  padding-bottom:6px;
+  border-bottom:1px solid var(--line);
+}
+
+.field-group{ margin-bottom:22px; }
+
+.field-label{
+  display:block;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.72rem;
+  color:var(--ink-soft);
+  margin-bottom:8px;
+}
+
+.segmented{ display:flex; border:1px solid var(--line); }
+.seg-btn{
+  flex:1;
+  padding:11px 10px;
+  background:transparent;
+  border:none;
+  border-right:1px solid var(--line);
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.82rem;
+  color:var(--ink-soft);
+  cursor:pointer;
+  transition:background 0.2s, color 0.2s;
+}
+.seg-btn:last-child{ border-right:none; }
+.seg-btn.active{ background:var(--ink); color:var(--washi-card); }
+
+.tier-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.tier-btn{
+  padding:14px 8px;
+  border:1px solid var(--line);
+  background:transparent;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.85rem;
+  color:var(--ink-soft);
+  cursor:pointer;
+  text-align:center;
+  line-height:1.5;
+  transition:background 0.2s, color 0.2s;
+}
+.tier-btn .tier-sub{ display:block; font-size:0.66rem; margin-top:3px; color:var(--ink-soft); }
+.tier-btn.active{ background:var(--ink); color:var(--washi-card); }
+.tier-btn.active .tier-sub{ color:var(--washi-card); opacity:0.85; }
+
+.num-input, .text-input{
+  width:100%;
+  padding:11px 12px;
+  border:1px solid var(--line);
+  background:#fff;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:1rem;
+  color:var(--ink);
+}
+.num-input:focus, .text-input:focus{ outline:none; border-color:var(--shu); }
+
+.select-field{
+  width:100%;
+  padding:11px 12px;
+  border:1px solid var(--line);
+  background-color:#fff;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.95rem;
+  color:var(--ink);
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
+    linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+  background-position: calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat:no-repeat;
+}
+.select-field:focus{ outline:none; border-color:var(--shu); }
+
+.two-col{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+.primary-btn{
+  width:100%;
+  padding:15px;
+  background:var(--ink);
+  color:var(--washi-card);
+  border:none;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.95rem;
+  letter-spacing:0.06em;
+  cursor:pointer;
+  transition:background 0.2s;
+}
+.primary-btn:hover{ background:var(--shu); }
+
+.ghost-btn{
+  padding:11px 20px;
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--ink-soft);
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.82rem;
+  cursor:pointer;
+  transition:border-color 0.2s, color 0.2s;
+}
+.ghost-btn:hover{ border-color:var(--ink); color:var(--ink); }
+.ghost-btn:disabled{ opacity:0.35; cursor:default; }
+
+.status-row{
+  display:flex;
+  justify-content:space-between;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.8rem;
+  color:var(--ink-soft);
+  margin-bottom:6px;
+}
+.status-item.stamp{ color:var(--shu); font-weight:700; }
+.tier-tag{
+  text-align:center;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.7rem;
+  color:var(--ink-soft);
+  margin-bottom:24px;
+}
+
+.cells{ display:flex; justify-content:center; gap:10px; margin-bottom:18px; }
+.cell{
+  width:64px; height:64px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.8rem;
+  border:1px solid var(--line);
+}
+.cell.filled{ background:rgba(43,43,39,0.03); }
+
+input.blank-input{
+  font-family:'Shippori Mincho', serif;
+  font-size:1.8rem;
+  text-align:center;
+  background:#fff;
+  border:1px solid var(--ink-soft);
+  color:var(--ink);
+  padding:0;
+}
+input.blank-input:focus{ outline:none; border-color:var(--shu); }
+.blank-result.correct{ background:rgba(47,90,59,0.08); border-color:var(--green); color:var(--green); }
+.blank-result.wrong{ background:rgba(156,43,35,0.08); border-color:var(--shu); color:var(--shu); }
+
+.reading-hint{
+  text-align:center;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.85rem;
+  color:var(--ink-soft);
+  margin-bottom:20px;
+  min-height:1.3em;
+  line-height:1.7;
+}
+
+.action-row{ display:flex; gap:10px; justify-content:center; margin-bottom:18px; flex-wrap:wrap; }
+
+.feedback{ text-align:center; font-family:'Zen Kaku Gothic New', sans-serif; font-size:0.85rem; min-height:1.2em; }
+.feedback.ok{ color:var(--green); }
+.feedback.ng{ color:var(--shu); }
+
+.score-stamp{
+  width:100px; height:100px;
+  border:2px solid var(--shu);
+  color:var(--shu);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.25rem; font-weight:700;
+  margin:0 auto 8px;
+}
+.result-sub{
+  text-align:center;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.8rem;
+  color:var(--ink-soft);
+  margin-bottom:28px;
+}
+
+.history-list, .record-list{
+  list-style:none;
+  margin:0 0 28px;
+  padding:0;
+  max-height:340px;
+  overflow-y:auto;
+  border-top:1px solid var(--line);
+}
+.history-item{ padding:12px 4px; border-bottom:1px solid var(--line); }
+.history-row1{ display:flex; align-items:baseline; gap:8px; }
+.h-mark{ font-weight:700; width:14px; display:inline-block; }
+.h-mark.correct{ color:var(--green); }
+.h-mark.wrong{ color:var(--shu); }
+.h-mark.pass{ color:var(--ink-soft); }
+.h-kanji{ font-size:1.05rem; }
+.h-reading{ font-family:'Zen Kaku Gothic New', sans-serif; font-size:0.68rem; color:var(--ink-soft); }
+.h-meaning{
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  color:var(--ink-soft);
+  font-size:0.78rem;
+  margin:4px 0 0 22px;
+  line-height:1.6;
+}
+
+.session-row{
+  display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;
+  padding:10px 4px; border-bottom:1px solid var(--line);
+  font-family:'Zen Kaku Gothic New', sans-serif; font-size:0.8rem; color:var(--ink-soft);
+}
+.session-score{ color:var(--ink); font-weight:700; }
+.word-row{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:10px 4px; border-bottom:1px solid var(--line);
+  font-family:'Zen Kaku Gothic New', sans-serif; font-size:0.82rem;
+}
+.word-kanji{ font-family:'Shippori Mincho', serif; font-size:1.05rem; color:var(--ink); min-width:72px; }
+.word-detail{ color:var(--ink-soft); flex:1; }
+.word-acc{ font-weight:700; color:var(--ink); white-space:nowrap; }
+.word-acc.weak{ color:var(--shu); }
+.empty-note{ padding:24px 4px; text-align:center; color:var(--ink-soft); font-family:'Zen Kaku Gothic New', sans-serif; font-size:0.85rem; }
+.sparkline-wrap{ margin-bottom:20px; }
+.sparkline{ width:100%; height:60px; display:block; }
+.sparkline-label{ text-align:center; font-family:'Zen Kaku Gothic New', sans-serif; font-size:0.7rem; color:var(--ink-soft); margin-top:4px; }
+
+.error-text{
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:0.85rem;
+  color:var(--ink-soft);
+  line-height:1.9;
+  margin:0 0 24px;
+}
+.error-text code{
+  background:rgba(43,43,39,0.06);
+  padding:2px 6px;
+  font-size:0.85em;
+}
+
+*:focus-visible{ outline:2px solid var(--shu); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+@media (max-width:480px){
+  .tanzaku{ padding:32px 22px; }
+  .cell{ width:50px; height:50px; font-size:1.4rem; }
+  input.blank-input{ font-size:1.4rem; }
+  .two-col{ grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ========================================================================
+   設定エリア(運用に合わせて書き換えてください)
+   ======================================================================== */
+
+// 学科の一覧。実際の学科名に書き換えてください。
+const DEPARTMENTS = ["学科A", "学科B", "学科C"];
+
+// 出席番号の範囲(1〜N番)
+const ATTENDANCE_NUMBERS = Array.from({ length: 40 }, (_, i) => i + 1);
+
+// Googleフォームへの自動送信設定。urlが空の間は送信をスキップします。
+// 「事前入力したリンクを取得」で生成されたURLから entry.xxxxxxx を拾ってここに入れてください。
+const GOOGLE_FORM_CONFIG = {
+  url: "", // 例: "https://docs.google.com/forms/d/e/xxxxxxxx/formResponse"
+  entries: {
+    department: "", // 学科
+    number: "",     // 出席番号
+    name: "",       // 氏名
+    mode: "",       // モード(難易度・出題数/時間を含む文字列)
+    correct: "",    // 正解数
+    total: "",      // 出題数
+    accuracy: ""    // 正答率
+  }
+};
+
+// CSVのファイル名(このHTMLファイルと同じフォルダに置いてください)
+const CSV_FILE = "./kanken_yojijukugo.csv";
+
+// 「日常」カテゴリに含める語(級を問わず出題対象になる)
+const DAILY_SET = new Set([
+  "一石二鳥", "温故知新", "起死回生", "五里霧中", "自業自得", "大器晩成", "単刀直入", "二束三文", "半信半疑", "附和雷同", "有名無実", "油断大敵", "用意周到", "理路整然", "臨機応変", "一心不乱", "因果応報", "我田引水", "危機一髪", "空前絶後", "言語道断", "針小棒大", "新陳代謝", "前代未聞", "大同小異", "朝令暮改", "天変地異", "二律背反", "捧腹絶倒", "本末転倒", "無我夢中", "唯一無二", "竜頭蛇尾", "和洋折衷", "一期一会", "花鳥風月", "弱肉強食", "温厚篤実", "快刀乱麻", "疑心暗鬼", "玉石混淆", "群雄割拠", "荒唐無稽", "電光石火", "千載一遇", "前人未到", "泰然自若", "一長一短", "一挙両得", "一喜一憂", "一進一退", "一問一答", "一気呵成", "一日千秋", "一目瞭然", "一網打尽", "一朝一夕", "一部始終", "一触即発", "一刀両断", "十人十色", "百発百中", "自画自賛", "四苦八苦", "悪戦苦闘", "意気投合", "意気消沈", "意味深長", "岡目八目", "感慨無量", "起承転結", "五臓六腑", "言行一致", "孤立無援", "呉越同舟", "三寒四温", "四面楚歌", "順風満帆", "初志貫徹", "諸行無常", "支離滅裂", "心機一転", "森羅万象", "大義名分", "単純明快", "適材適所", "独立独歩", "二人三脚", "日進月歩", "八方美人", "美辞麗句", "品行方正", "不老不死", "粉骨砕身", "満身創痍", "無味乾燥", "優柔不断", "和魂洋才", "一心同体", "完全無欠", "器用貧乏", "巧言令色", "公明正大", "才色兼備", "質実剛健", "縦横無尽", "首尾一貫", "盛者必衰", "猪突猛進", "徹頭徹尾", "東奔西走", "罵詈雑言", "波瀾万丈", "行雲流水", "融通無礙", "美人薄命", "異口同音", "右往左往", "栄枯盛衰", "隔靴掻痒", "画竜点睛", "我武者羅", "喜怒哀楽", "急転直下", "金科玉条", "口耳四寸", "才気煥発", "三位一体", "七転八起", "自由奔放", "心頭滅却", "人跡未踏", "信賞必罰", "晴耕雨読", "切磋琢磨", "千変万化", "相思相愛", "危急存亡", "大言壮語", "大胆不敵", "知行合一", "朝三暮四", "直情径行", "天真爛漫", "当意即妙", "独断専行", "百戦錬磨", "不即不離", "無病息災", "門外不出", "有言実行", "理非曲直", "悪口雑言", "一望千里", "換骨奪胎", "九死一生", "空理空論", "軽挙妄動", "五風十雨", "再三再四", "自給自足", "獅子奮迅", "自然淘汰", "質疑応答", "深謀遠慮", "大願成就", "泰山北斗", "大同団結", "不撓不屈", "不眠不休", "優勝劣敗", "羊頭狗肉", "流言蜚語", "和敬清寂"
+]);
+
+// 級 → 難易度ティアの対応
+const LEVEL_TIER = {
+  "1級": "advanced", "準1級": "advanced", "2級": "advanced",
+  "準2級": "intermediate", "3級": "intermediate", "4級": "intermediate",
+  "5級": "beginner"
+};
+
+const TIERS = [
+  { key: "advanced",     label: "上級", sub: "1級・準1級・2級" },
+  { key: "intermediate", label: "中級", sub: "準2級・3級・4級" },
+  { key: "beginner",     label: "初級", sub: "5級" },
+  { key: "daily",        label: "日常", sub: "級を問わず頻出語" }
+];
+
+const HINT_MODES = [
+  { key: "none",    label: "ヒントなし" },
+  { key: "reading", label: "読み方だけ" },
+  { key: "meaning", label: "意味" },
+  { key: "origin",  label: "由来だけ" },
+  { key: "both",    label: "読みと意味の両方" }
+];
+
+/* ========================================================================
+   CSV読み込み・パース
+   ======================================================================== */
+
+function parseCSV(text){
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else {
+      if(c === '"'){ inQuotes = true; }
+      else if(c === ','){ row.push(field); field = ''; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else if(c === '\r'){ /* skip */ }
+      else { field += c; }
+    }
+  }
+  if(field.length > 0 || row.length > 0){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+// 「意味・由来」が1つの文章にまとまっているため、最初の句点までを意味、
+// それ以降を由来(語源の説明)とみなして分割する
+function splitMeaning(text){
+  const idx = text.indexOf('。');
+  if(idx === -1) return { meaning: text, origin: '' };
+  return { meaning: text.slice(0, idx+1), origin: text.slice(idx+1).trim() };
+}
+
+let ALL_IDIOMS = [];
+
+function buildIdioms(csvText){
+  const rows = parseCSV(csvText.replace(/^\uFEFF/, ''));
+  const body = rows.slice(1).filter(r => r.length >= 4 && r[1]);
+  ALL_IDIOMS = body.map(r=>{
+    const level = r[0].trim();
+    const kanji = r[1].trim();
+    const reading = r[2].trim();
+    const { meaning, origin } = splitMeaning((r[3] || '').trim());
+    return {
+      level, kanji, reading, meaning, origin,
+      fullText: (r[3] || '').trim(),
+      tier: LEVEL_TIER[level] || null,
+      isDaily: DAILY_SET.has(kanji)
+    };
+  });
+}
+
+function poolForTier(tierKey){
+  if(tierKey === 'daily') return ALL_IDIOMS.filter(w => w.isDaily);
+  return ALL_IDIOMS.filter(w => w.tier === tierKey);
+}
+
+/* ========================================================================
+   状態管理
+   ======================================================================== */
+
+let state = {
+  screen: 'loading',
+  tier: 'beginner',
+  mode: 'count',
+  targetCount: 10,
+  timeLimit: 60,
+  hintMode: 'none',
+  timeRemaining: 0,
+  timerId: null,
+  pool: [],
+  current: null,
+  checked: false,
+  correctCount: 0,
+  totalCount: 0,
+  history: [],
+  mypageTab: 'sessions',
+  progress: { sessions: [], wordStats: {} },
+  student: { department: DEPARTMENTS[0], number: 1, name: '' },
+  loadError: null
+};
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+/* ---- ローカル保存(進捗・生徒情報は端末ごとに保存) ---- */
+
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem('yjj_progress');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object'){
+        state.progress.sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
+        state.progress.wordStats = (parsed.wordStats && typeof parsed.wordStats === 'object') ? parsed.wordStats : {};
+      }
+    }
+  } catch(err){ /* 初回利用時などはデフォルトのまま */ }
+}
+
+function saveProgress(){
+  try{ localStorage.setItem('yjj_progress', JSON.stringify(state.progress)); }
+  catch(err){ console.error('進捗の保存に失敗しました', err); }
+}
+
+function loadStudent(){
+  try{
+    const raw = localStorage.getItem('yjj_student');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object'){
+        if(DEPARTMENTS.includes(parsed.department)) state.student.department = parsed.department;
+        if(ATTENDANCE_NUMBERS.includes(parsed.number)) state.student.number = parsed.number;
+        if(typeof parsed.name === 'string') state.student.name = parsed.name;
+      }
+    }
+  } catch(err){ /* 初回利用時などはデフォルトのまま */ }
+}
+
+function saveStudent(){
+  try{ localStorage.setItem('yjj_student', JSON.stringify(state.student)); }
+  catch(err){ console.error('生徒情報の保存に失敗しました', err); }
+}
+
+/* ---- 先生への自動送信(Googleフォーム) ---- */
+
+function sendResultToTeacher(session){
+  if(!GOOGLE_FORM_CONFIG.url) return;
+  const e = GOOGLE_FORM_CONFIG.entries;
+  const tierLabel = (TIERS.find(t=>t.key===state.tier) || {}).label || '';
+  const modeStr = (session.mode === 'count' ? `出題数${session.setting}問` : `タイム${session.setting}秒`);
+  const body = new URLSearchParams({
+    [e.department]: state.student.department,
+    [e.number]: String(state.student.number),
+    [e.name]: state.student.name,
+    [e.mode]: `${tierLabel}・${modeStr}`,
+    [e.correct]: String(session.correct),
+    [e.total]: String(session.total),
+    [e.accuracy]: String(session.accuracy)
+  });
+  fetch(GOOGLE_FORM_CONFIG.url, { method: 'POST', mode: 'no-cors', body })
+    .catch(err=>{ console.error('先生への送信に失敗しました', err); });
+}
+
+function recordSession(){
+  const rate = state.totalCount ? Math.round((state.correctCount/state.totalCount)*100) : 0;
+  const session = {
+    date: new Date().toISOString(),
+    tier: state.tier,
+    mode: state.mode,
+    correct: state.correctCount,
+    total: state.totalCount,
+    accuracy: rate,
+    setting: state.mode === 'count' ? state.targetCount : state.timeLimit
+  };
+  state.progress.sessions.push(session);
+  if(state.progress.sessions.length > 50){
+    state.progress.sessions = state.progress.sessions.slice(-50);
+  }
+  state.history.forEach(h=>{
+    const ws = state.progress.wordStats[h.kanji] || { correct:0, wrong:0, pass:0 };
+    if(h.result === 'correct') ws.correct += 1;
+    else if(h.result === 'wrong') ws.wrong += 1;
+    else ws.pass += 1;
+    state.progress.wordStats[h.kanji] = ws;
+  });
+  saveProgress();
+  sendResultToTeacher(session);
+}
+
+/* ========================================================================
+   ゲームロジック
+   ======================================================================== */
+
+function startGame(){
+  state.targetCount = Math.max(1, parseInt(state.targetCount,10) || 10);
+  state.timeLimit = Math.max(1, parseInt(state.timeLimit,10) || 60);
+  state.student.name = (state.student.name || '').trim();
+  saveStudent();
+
+  state.correctCount = 0;
+  state.totalCount = 0;
+  state.history = [];
+  state.pool = shuffle(poolForTier(state.tier));
+  state.screen = 'play';
+
+  if(state.timerId){ clearInterval(state.timerId); state.timerId = null; }
+
+  if(state.mode === 'time'){
+    state.timeRemaining = state.timeLimit;
+    state.timerId = setInterval(()=>{
+      state.timeRemaining -= 1;
+      const disp = document.getElementById('timer-display');
+      if(disp) disp.textContent = state.timeRemaining;
+      if(state.timeRemaining <= 0){
+        clearInterval(state.timerId);
+        state.timerId = null;
+        endGame();
+      }
+    }, 1000);
+  }
+
+  nextQuestion();
+}
+
+function nextQuestion(){
+  if(state.pool.length === 0){
+    state.pool = shuffle(poolForTier(state.tier));
+  }
+  const idiom = state.pool.pop();
+  const numBlanks = Math.random() < 0.5 ? 1 : 2;
+  const positions = shuffle([0,1,2,3]).slice(0, numBlanks).sort((a,b)=>a-b);
+  state.current = { idiom, blanks: positions, hintShown:false, results:null, result:null };
+  state.checked = false;
+  render();
+}
+
+function checkAnswer(){
+  const { idiom, blanks } = state.current;
+  const chars = idiom.kanji.split('');
+  const results = {};
+  let allCorrect = true;
+  blanks.forEach(idx=>{
+    const inp = document.getElementById('blank-'+idx);
+    const val = (inp && inp.value ? inp.value : '').trim();
+    const expected = chars[idx];
+    const ok = val === expected;
+    if(!ok) allCorrect = false;
+    results[idx] = { value: val, expected, ok };
+  });
+  state.current.results = results;
+  state.current.result = allCorrect ? 'correct' : 'wrong';
+  state.correctCount += allCorrect ? 1 : 0;
+  state.totalCount += 1;
+  state.history.push({ kanji: idiom.kanji, reading: idiom.reading, meaning: idiom.fullText, result: state.current.result });
+  state.checked = true;
+  render();
+}
+
+function passQuestion(){
+  const { idiom } = state.current;
+  state.totalCount += 1;
+  state.history.push({ kanji: idiom.kanji, reading: idiom.reading, meaning: idiom.fullText, result: 'pass' });
+  advanceOrEnd();
+}
+
+function advance(){ advanceOrEnd(); }
+
+function advanceOrEnd(){
+  if(state.mode === 'count' && state.totalCount >= state.targetCount){
+    endGame();
+  } else {
+    nextQuestion();
+  }
+}
+
+function endGame(){
+  if(state.timerId){ clearInterval(state.timerId); state.timerId = null; }
+  recordSession();
+  state.screen = 'result';
+  render();
+}
+
+function restart(){
+  state.screen = 'start';
+  render();
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(state.screen === 'play' && state.checked && e.key === 'Enter'){
+    e.preventDefault();
+    advance();
+  }
+});
+
+/* ========================================================================
+   画面描画
+   ======================================================================== */
+
+function renderLoading(){
+  return `<div class="tanzaku"><p class="lead" style="margin:0;">読み込み中…</p></div>`;
+}
+
+function renderError(){
+  return `
+    <div class="tanzaku">
+      <h1 class="title" style="font-size:1.2rem;">読み込みエラー</h1>
+      <p class="error-text">
+        四字熟語のデータ(<code>${CSV_FILE}</code>)を読み込めませんでした。<br><br>
+        このHTMLファイルと <code>kanken_yojijukugo.csv</code> を<strong>同じフォルダ</strong>に置いた状態で公開・閲覧してください。ファイルをそのままダブルクリックして開いた場合(file://で開いた場合)もこのエラーになることがあります。GitHub Pagesなど、Webサーバー経由で開くと解決します。
+      </p>
+      <button id="retry-btn" class="primary-btn">再読み込み</button>
+    </div>
+  `;
+}
+
+function renderStart(){
+  const numLabel = state.mode === 'count' ? '出題数' : '制限時間（秒）';
+  const numValue = state.mode === 'count' ? state.targetCount : state.timeLimit;
+
+  const deptOptions = DEPARTMENTS.map(d=>`<option value="${d}" ${state.student.department===d?'selected':''}>${d}</option>`).join('');
+  const numberOptions = ATTENDANCE_NUMBERS.map(n=>`<option value="${n}" ${state.student.number===n?'selected':''}>${n}番</option>`).join('');
+  const tierButtons = TIERS.map(t=>`
+    <button type="button" class="tier-btn ${state.tier===t.key?'active':''}" data-tier="${t.key}">
+      ${t.label}<span class="tier-sub">${t.sub}</span>
+    </button>
+  `).join('');
+  const hintOptions = HINT_MODES.map(h=>`<option value="${h.key}" ${state.hintMode===h.key?'selected':''}>${h.label}</option>`).join('');
+
+  return `
+    <div class="tanzaku">
+      <h1 class="title">四字熟語タイピング</h1>
+      <p class="lead">空欄になった漢字を、読みから変換して埋めてください。</p>
+
+      <div class="section-label">生徒情報</div>
+      <div class="field-group two-col">
+        <div>
+          <label class="field-label" for="dept-select">学科</label>
+          <select id="dept-select" class="select-field">${deptOptions}</select>
+        </div>
+        <div>
+          <label class="field-label" for="number-select">出席番号</label>
+          <select id="number-select" class="select-field">${numberOptions}</select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="name-input">氏名</label>
+        <input type="text" id="name-input" class="text-input" placeholder="例：北海太郎" value="${state.student.name}">
+      </div>
+
+      <div class="section-label" style="margin-top:32px;">プレイ設定</div>
+      <div class="field-group">
+        <span class="field-label">難易度</span>
+        <div class="tier-grid" id="tier-grid">${tierButtons}</div>
+      </div>
+
+      <div class="field-group">
+        <span class="field-label">出題モード</span>
+        <div class="segmented" id="mode-segmented">
+          <button type="button" class="seg-btn ${state.mode==='count'?'active':''}" data-mode="count">出題数モード</button>
+          <button type="button" class="seg-btn ${state.mode==='time'?'active':''}" data-mode="time">タイムアタック</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="num-input">${numLabel}</label>
+        <input type="number" min="1" step="1" id="num-input" class="num-input" value="${numValue}">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="hint-select">ヒント</label>
+        <select id="hint-select" class="select-field">${hintOptions}</select>
+      </div>
+
+      <button id="start-btn" class="primary-btn">はじめる</button>
+      <button id="mypage-btn-start" class="ghost-btn" style="width:100%; margin-top:12px;">マイページ（記録を見る）</button>
+    </div>
+  `;
+}
+
+function hintContent(current){
+  const { idiom, hintShown } = current;
+  if(!hintShown) return '';
+  if(state.hintMode === 'reading') return idiom.reading;
+  if(state.hintMode === 'meaning') return idiom.meaning || '(意味の記載がありません)';
+  if(state.hintMode === 'origin') return idiom.origin || '(由来の記載はありません)';
+  if(state.hintMode === 'both') return `${idiom.reading}／${idiom.meaning || '(意味の記載がありません)'}`;
+  return '';
+}
+
+function renderPlay(){
+  const { idiom, blanks, hintShown } = state.current;
+  const chars = idiom.kanji.split('');
+  const tierLabel = (TIERS.find(t=>t.key===state.tier) || {}).label || '';
+
+  const cellsHtml = chars.map((ch, i)=>{
+    if(blanks.includes(i)){
+      if(state.checked){
+        const r = state.current.results[i];
+        return `<div class="cell blank-result ${r.ok?'correct':'wrong'}">${r.expected}</div>`;
+      }
+      return `<input class="cell blank-input" id="blank-${i}" data-index="${i}" autocomplete="off" autocapitalize="off" spellcheck="false" lang="ja">`;
+    }
+    return `<div class="cell filled">${ch}</div>`;
+  }).join('');
+
+  const statusLeft = state.mode === 'count'
+    ? `${Math.min(state.totalCount+1, state.targetCount)} / ${state.targetCount}問`
+    : `残り <span id="timer-display">${state.timeRemaining}</span>秒`;
+
+  const hintEnabled = state.hintMode !== 'none';
+  const hintBtnHtml = hintEnabled
+    ? `<button id="hint-btn" class="ghost-btn" ${hintShown ? 'disabled' : ''}>ヒント</button>`
+    : '';
+
+  const feedbackHtml = state.checked
+    ? `<div class="feedback ${state.current.result==='correct'?'ok':'ng'}">${state.current.result==='correct' ? '正解' : '不正解 － 正しい漢字を表示しました'}（Enterで次へ）</div>`
+    : `<div class="feedback"></div>`;
+
+  return `
+    <div class="tanzaku">
+      <div class="status-row">
+        <span class="status-item">${statusLeft}</span>
+        <span class="status-item stamp">正解 ${state.correctCount}</span>
+      </div>
+      <div class="tier-tag">${tierLabel}</div>
+
+      <div class="cells">${cellsHtml}</div>
+
+      <div class="reading-hint">${hintContent(state.current)}</div>
+
+      <div class="action-row">
+        ${hintBtnHtml}
+        <button id="pass-btn" class="ghost-btn" ${state.checked?'disabled':''}>パス</button>
+        <button id="check-btn" class="primary-btn" style="width:auto; padding:11px 24px;">${state.checked ? '次へ' : '決定'}</button>
+      </div>
+
+      ${feedbackHtml}
+    </div>
+  `;
+}
+
+function renderResult(){
+  const rate = state.totalCount ? Math.round((state.correctCount/state.totalCount)*100) : 0;
+  const tierLabel = (TIERS.find(t=>t.key===state.tier) || {}).label || '';
+  const modeNote = state.mode === 'time' ? `　（制限時間 ${state.timeLimit}秒）` : '';
+
+  const itemsHtml = state.history.map(h=>{
+    const mark = h.result === 'correct' ? '○' : (h.result === 'wrong' ? '✕' : '－');
+    return `
+      <li class="history-item">
+        <div class="history-row1">
+          <span class="h-mark ${h.result}">${mark}</span>
+          <span class="h-kanji">${h.kanji}</span>
+          <span class="h-reading">${h.reading}</span>
+        </div>
+        <div class="h-meaning">${h.meaning}</div>
+      </li>
+    `;
+  }).join('');
+
+  return `
+    <div class="tanzaku">
+      <div class="score-stamp">${state.correctCount} / ${state.totalCount}</div>
+      <p class="result-sub">${tierLabel}　正答率 ${rate}%${modeNote}</p>
+
+      <ul class="history-list">${itemsHtml}</ul>
+
+      <div class="action-row" style="margin-bottom:0;">
+        <button id="restart-btn" class="primary-btn" style="flex:1;">もう一度</button>
+        <button id="mypage-btn-result" class="ghost-btn" style="flex:1;">マイページ</button>
+      </div>
+    </div>
+  `;
+}
+
+function buildSparkline(sessions){
+  if(!sessions.length) return '';
+  const w = 300, h = 60, pad = 6;
+  const pts = sessions.map((s,i)=>{
+    const x = sessions.length === 1 ? w/2 : pad + (i*(w-2*pad))/(sessions.length-1);
+    const y = h - pad - ((s.accuracy/100)*(h-2*pad));
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return `
+    <div class="sparkline-wrap">
+      <svg viewBox="0 0 ${w} ${h}" class="sparkline" preserveAspectRatio="none">
+        <polyline points="${pts}" fill="none" stroke="#9C2B23" stroke-width="2"/>
+      </svg>
+      <div class="sparkline-label">直近${sessions.length}回の正答率推移</div>
+    </div>
+  `;
+}
+
+function renderMypage(){
+  const sessions = state.progress.sessions.slice().reverse();
+
+  const wordEntries = Object.keys(state.progress.wordStats).map(k=>{
+    const ws = state.progress.wordStats[k];
+    const attempts = ws.correct + ws.wrong;
+    return { kanji:k, ...ws, accuracy: attempts ? Math.round((ws.correct/attempts)*100) : null };
+  });
+  wordEntries.sort((a,b)=>{
+    const aa = a.accuracy === null ? 101 : a.accuracy;
+    const bb = b.accuracy === null ? 101 : b.accuracy;
+    return aa - bb;
+  });
+
+  const sessionsHtml = sessions.length ? sessions.map(s=>{
+    const d = new Date(s.date);
+    const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const tierLabel = (TIERS.find(t=>t.key===s.tier) || {}).label || '';
+    const modeStr = s.mode === 'count' ? `出題数${s.setting}問` : `タイム${s.setting}秒`;
+    return `<li class="session-row">
+      <span class="session-date">${dateStr}</span>
+      <span class="session-mode">${tierLabel}・${modeStr}</span>
+      <span class="session-score">${s.correct}/${s.total}（${s.accuracy}%）</span>
+    </li>`;
+  }).join('') : `<li class="empty-note">まだプレイ記録がありません。</li>`;
+
+  const wordsHtml = wordEntries.length ? wordEntries.map(w=>{
+    const accStr = w.accuracy === null ? '－' : `${w.accuracy}%`;
+    return `<li class="word-row">
+      <span class="word-kanji">${w.kanji}</span>
+      <span class="word-detail">正解${w.correct}・誤答${w.wrong}${w.pass ? `・パス${w.pass}` : ''}</span>
+      <span class="word-acc ${w.accuracy !== null && w.accuracy < 60 ? 'weak' : ''}">${accStr}</span>
+    </li>`;
+  }).join('') : `<li class="empty-note">まだ記録がありません。</li>`;
+
+  return `
+    <div class="tanzaku">
+      <h1 class="title" style="font-size:1.2rem;">マイページ</h1>
+      <div class="segmented" id="mypage-tabs" style="margin-bottom:24px;">
+        <button type="button" class="seg-btn ${state.mypageTab==='sessions'?'active':''}" data-tab="sessions">セッション履歴</button>
+        <button type="button" class="seg-btn ${state.mypageTab==='words'?'active':''}" data-tab="words">熟語別成績</button>
+      </div>
+
+      ${state.mypageTab === 'sessions' ? `
+        ${buildSparkline(sessions.slice(0,20).reverse())}
+        <ul class="record-list">${sessionsHtml}</ul>
+      ` : `
+        <p class="lead" style="margin-bottom:16px;">正答率が低い熟語から順に表示しています。</p>
+        <ul class="record-list">${wordsHtml}</ul>
+      `}
+
+      <button id="back-btn" class="ghost-btn" style="width:100%;">プレイ画面に戻る</button>
+    </div>
+  `;
+}
+
+/* ========================================================================
+   イベント登録・描画本体
+   ======================================================================== */
+
+function attachListeners(){
+  if(state.screen === 'error'){
+    const rb = document.getElementById('retry-btn');
+    if(rb) rb.addEventListener('click', init);
+    return;
+  }
+
+  if(state.screen === 'start'){
+    document.getElementById('dept-select').addEventListener('change', e=>{ state.student.department = e.target.value; saveStudent(); });
+    document.getElementById('number-select').addEventListener('change', e=>{ state.student.number = parseInt(e.target.value,10); saveStudent(); });
+    document.getElementById('name-input').addEventListener('input', e=>{ state.student.name = e.target.value; });
+    document.getElementById('name-input').addEventListener('change', saveStudent);
+
+    document.querySelectorAll('#tier-grid .tier-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ state.tier = btn.dataset.tier; render(); });
+    });
+    document.querySelectorAll('#mode-segmented .seg-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ state.mode = btn.dataset.mode; render(); });
+    });
+    document.getElementById('num-input').addEventListener('input', (e)=>{
+      const v = parseInt(e.target.value, 10);
+      if(!isNaN(v)){
+        if(state.mode === 'count') state.targetCount = v; else state.timeLimit = v;
+      }
+    });
+    document.getElementById('hint-select').addEventListener('change', e=>{ state.hintMode = e.target.value; });
+
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('mypage-btn-start').addEventListener('click', ()=>{ state.screen = 'mypage'; render(); });
+
+  } else if(state.screen === 'play'){
+    const blanks = state.current.blanks;
+
+    if(!state.checked){
+      blanks.forEach((idx, pos)=>{
+        const inp = document.getElementById('blank-'+idx);
+        inp.addEventListener('keydown', (e)=>{
+          if(e.key === 'Enter'){
+            e.preventDefault();
+            if(pos < blanks.length - 1){
+              document.getElementById('blank-'+blanks[pos+1]).focus();
+            } else {
+              checkAnswer();
+            }
+          }
+        });
+      });
+      const firstInput = document.getElementById('blank-'+blanks[0]);
+      if(firstInput) firstInput.focus();
+    }
+
+    if(state.hintMode !== 'none'){
+      const hb = document.getElementById('hint-btn');
+      if(hb) hb.addEventListener('click', ()=>{ state.current.hintShown = true; render(); });
+    }
+
+    document.getElementById('pass-btn').addEventListener('click', ()=>{ if(!state.checked) passQuestion(); });
+    document.getElementById('check-btn').addEventListener('click', ()=>{ state.checked ? advance() : checkAnswer(); });
+
+  } else if(state.screen === 'result'){
+    document.getElementById('restart-btn').addEventListener('click', restart);
+    document.getElementById('mypage-btn-result').addEventListener('click', ()=>{ state.screen = 'mypage'; render(); });
+
+  } else if(state.screen === 'mypage'){
+    document.querySelectorAll('#mypage-tabs .seg-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ state.mypageTab = btn.dataset.tab; render(); });
+    });
+    document.getElementById('back-btn').addEventListener('click', ()=>{ state.screen = 'start'; render(); });
+  }
+}
+
+function render(){
+  const app = document.getElementById('app');
+  if(state.screen === 'loading') app.innerHTML = renderLoading();
+  else if(state.screen === 'error') app.innerHTML = renderError();
+  else if(state.screen === 'start') app.innerHTML = renderStart();
+  else if(state.screen === 'play') app.innerHTML = renderPlay();
+  else if(state.screen === 'mypage') app.innerHTML = renderMypage();
+  else app.innerHTML = renderResult();
+  attachListeners();
+}
+
+async function init(){
+  state.screen = 'loading';
+  state.loadError = null;
+  render();
+
+  loadProgress();
+  loadStudent();
+
+  try{
+    const res = await fetch(CSV_FILE);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    buildIdioms(text);
+    if(ALL_IDIOMS.length === 0) throw new Error('empty dataset');
+    state.screen = 'start';
+  } catch(err){
+    console.error('CSV読み込みエラー', err);
+    state.loadError = err;
+    state.screen = 'error';
+  }
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
