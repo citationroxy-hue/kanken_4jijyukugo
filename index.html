@@ -342,11 +342,12 @@ const GOOGLE_FORM_CONFIG = {
   entries: {
     department: "entry.862000164",  // 学科
     number: "entry.1053431089",     // 出席番号
-    name: "",                       // 氏名 ※フォームに項目がないため未設定
+    name: "entry.491809829",        // 氏名
     mode: "entry.1877969038",       // モード
     correct: "entry.1081066175",    // 正当数(正解数)
     total: "entry.1373428105",      // 出題数
-    accuracy: "entry.1779589167"    // 正答率
+    accuracy: "entry.1779589167",   // 正答率
+    hintCount: "entry.984919336"    // ヒント利用回数
   }
 };
 
@@ -453,6 +454,7 @@ let state = {
   targetCount: 10,
   timeLimit: 60,
   hintMode: 'none',
+  hintUsedCount: 0,
   timeRemaining: 0,
   timerId: null,
   pool: [],
@@ -516,22 +518,67 @@ function saveStudent(){
 }
 
 /* ---- 先生への自動送信(Googleフォーム) ---- */
+/* オンラインなら即送信、失敗・オフライン時はキューに貯めて後で自動送信 */
 
-function sendResultToTeacher(session){
-  if(!GOOGLE_FORM_CONFIG.url) return;
+function loadQueue(){
+  try{
+    const raw = localStorage.getItem('yjj_pending_queue');
+    return raw ? JSON.parse(raw) : [];
+  } catch(err){ return []; }
+}
+
+function saveQueue(queue){
+  try{ localStorage.setItem('yjj_pending_queue', JSON.stringify(queue)); }
+  catch(err){ console.error('送信待ちデータの保存に失敗しました', err); }
+}
+
+function queueForLater(url, paramsObj){
+  const queue = loadQueue();
+  queue.push({ url, params: paramsObj, queuedAt: new Date().toISOString() });
+  saveQueue(queue);
+}
+
+function flushPendingQueue(){
+  if(!navigator.onLine) return;
+  const queue = loadQueue();
+  if(!queue.length) return;
+
+  const remaining = [];
+  const tasks = queue.map(item=>
+    fetch(item.url, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(item.params) })
+      .catch(()=>{ remaining.push(item); })
+  );
+  Promise.all(tasks).then(()=>{ saveQueue(remaining); });
+}
+
+window.addEventListener('online', flushPendingQueue);
+
+function buildFormParams(session){
   const e = GOOGLE_FORM_CONFIG.entries;
   const tierLabel = (TIERS.find(t=>t.key===state.tier) || {}).label || '';
   const modeStr = (session.mode === 'count' ? `出題数${session.setting}問` : `タイム${session.setting}秒`);
-  const body = new URLSearchParams();
-  if(e.department) body.append(e.department, state.student.department);
-  if(e.number) body.append(e.number, String(state.student.number));
-  if(e.name) body.append(e.name, state.student.name);
-  if(e.mode) body.append(e.mode, `${tierLabel}・${modeStr}`);
-  if(e.correct) body.append(e.correct, String(session.correct));
-  if(e.total) body.append(e.total, String(session.total));
-  if(e.accuracy) body.append(e.accuracy, String(session.accuracy));
-  fetch(GOOGLE_FORM_CONFIG.url, { method: 'POST', mode: 'no-cors', body })
-    .catch(err=>{ console.error('先生への送信に失敗しました', err); });
+  const params = {};
+  if(e.department) params[e.department] = state.student.department;
+  if(e.number) params[e.number] = String(state.student.number);
+  if(e.name) params[e.name] = state.student.name;
+  if(e.mode) params[e.mode] = `${tierLabel}・${modeStr}`;
+  if(e.correct) params[e.correct] = String(session.correct);
+  if(e.total) params[e.total] = String(session.total);
+  if(e.accuracy) params[e.accuracy] = String(session.accuracy);
+  if(e.hintCount) params[e.hintCount] = String(session.hintCount);
+  return params;
+}
+
+function sendResultToTeacher(session){
+  if(!GOOGLE_FORM_CONFIG.url) return;
+  const params = buildFormParams(session);
+
+  if(!navigator.onLine){
+    queueForLater(GOOGLE_FORM_CONFIG.url, params);
+    return;
+  }
+  fetch(GOOGLE_FORM_CONFIG.url, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(params) })
+    .catch(()=>{ queueForLater(GOOGLE_FORM_CONFIG.url, params); });
 }
 
 function recordSession(){
@@ -543,6 +590,7 @@ function recordSession(){
     correct: state.correctCount,
     total: state.totalCount,
     accuracy: rate,
+    hintCount: state.hintUsedCount,
     setting: state.mode === 'count' ? state.targetCount : state.timeLimit
   };
   state.progress.sessions.push(session);
@@ -572,6 +620,7 @@ function startGame(){
 
   state.correctCount = 0;
   state.totalCount = 0;
+  state.hintUsedCount = 0;
   state.history = [];
   state.pool = shuffle(poolForTier(state.tier));
   state.screen = 'play';
@@ -977,7 +1026,7 @@ function attachListeners(){
 
     if(state.hintMode !== 'none'){
       const hb = document.getElementById('hint-btn');
-      if(hb) hb.addEventListener('click', ()=>{ state.current.hintShown = true; render(); });
+      if(hb) hb.addEventListener('click', ()=>{ state.current.hintShown = true; state.hintUsedCount += 1; render(); });
     }
 
     document.getElementById('pass-btn').addEventListener('click', ()=>{ if(!state.checked) passQuestion(); });
@@ -1027,6 +1076,16 @@ async function init(){
     state.screen = 'error';
   }
   render();
+
+  flushPendingQueue();
+}
+
+// オフラインでも起動できるよう、HTML・CSV・フォントをService Workerでキャッシュする
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./service-worker.js')
+      .catch(err=>console.error('Service Workerの登録に失敗しました', err));
+  });
 }
 
 init();
