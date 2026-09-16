@@ -330,7 +330,7 @@ input.blank-input:focus{ outline:none; border-color:var(--shu); }
    ======================================================================== */
 
 // 学科の一覧。実際の学科名に書き換えてください。
-const DEPARTMENTS = ["学科A", "学科B", "学科C"];
+const DEPARTMENTS = ["食品科学科", "生産科学科"];
 
 // 出席番号の範囲(1〜N番)
 const ATTENDANCE_NUMBERS = Array.from({ length: 40 }, (_, i) => i + 1);
@@ -338,15 +338,15 @@ const ATTENDANCE_NUMBERS = Array.from({ length: 40 }, (_, i) => i + 1);
 // Googleフォームへの自動送信設定。urlが空の間は送信をスキップします。
 // 「事前入力したリンクを取得」で生成されたURLから entry.xxxxxxx を拾ってここに入れてください。
 const GOOGLE_FORM_CONFIG = {
-  url: "", // 例: "https://docs.google.com/forms/d/e/xxxxxxxx/formResponse"
+  url: "https://docs.google.com/forms/d/e/1FAIpQLSeCyJ1tcMqrXy3x18l5QNiGiq1OBRP0YION_StYcAJnikSX1A/formResponse",
   entries: {
-    department: "", // 学科
-    number: "",     // 出席番号
-    name: "",       // 氏名
-    mode: "",       // モード(難易度・出題数/時間を含む文字列)
-    correct: "",    // 正解数
-    total: "",      // 出題数
-    accuracy: ""    // 正答率
+    department: "entry.862000164",  // 学科
+    number: "entry.1053431089",     // 出席番号
+    name: "",                       // 氏名 ※フォームに項目がないため未設定
+    mode: "entry.1877969038",       // モード
+    correct: "entry.1081066175",    // 正当数(正解数)
+    total: "entry.1373428105",      // 出題数
+    accuracy: "entry.1779589167"    // 正答率
   }
 };
 
@@ -522,15 +522,14 @@ function sendResultToTeacher(session){
   const e = GOOGLE_FORM_CONFIG.entries;
   const tierLabel = (TIERS.find(t=>t.key===state.tier) || {}).label || '';
   const modeStr = (session.mode === 'count' ? `出題数${session.setting}問` : `タイム${session.setting}秒`);
-  const body = new URLSearchParams({
-    [e.department]: state.student.department,
-    [e.number]: String(state.student.number),
-    [e.name]: state.student.name,
-    [e.mode]: `${tierLabel}・${modeStr}`,
-    [e.correct]: String(session.correct),
-    [e.total]: String(session.total),
-    [e.accuracy]: String(session.accuracy)
-  });
+  const body = new URLSearchParams();
+  if(e.department) body.append(e.department, state.student.department);
+  if(e.number) body.append(e.number, String(state.student.number));
+  if(e.name) body.append(e.name, state.student.name);
+  if(e.mode) body.append(e.mode, `${tierLabel}・${modeStr}`);
+  if(e.correct) body.append(e.correct, String(session.correct));
+  if(e.total) body.append(e.total, String(session.total));
+  if(e.accuracy) body.append(e.accuracy, String(session.accuracy));
   fetch(GOOGLE_FORM_CONFIG.url, { method: 'POST', mode: 'no-cors', body })
     .catch(err=>{ console.error('先生への送信に失敗しました', err); });
 }
@@ -692,7 +691,7 @@ function renderStart(){
   const numValue = state.mode === 'count' ? state.targetCount : state.timeLimit;
 
   const deptOptions = DEPARTMENTS.map(d=>`<option value="${d}" ${state.student.department===d?'selected':''}>${d}</option>`).join('');
-  const numberOptions = ATTENDANCE_NUMBERS.map(n=>`<option value="${n}" ${state.student.number===n?'selected':''}>${n}番</option>`).join('');
+  const numberOptions = ATTENDANCE_NUMBERS.map(n=>`<option value="${n}" ${state.student.number===n?'selected':''}>${n}</option>`).join('');
   const tierButtons = TIERS.map(t=>`
     <button type="button" class="tier-btn ${state.tier===t.key?'active':''}" data-tier="${t.key}">
       ${t.label}<span class="tier-sub">${t.sub}</span>
